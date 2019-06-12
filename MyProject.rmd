@@ -63,7 +63,11 @@ k = 5
 # Run the k-means algorithms
 first_clust = kmeans(scaled, centers = k, nstart = 1)
 
+<<<<<<< HEAD
 # Checking how many patients are in each group
+=======
+# How many patients are in each group?
+>>>>>>> e5b166296a26747938ea6bc3fe4d1d091f41e6ef
 first_clust$size
 ```
 
@@ -82,7 +86,11 @@ set.seed(seed_val, kind = "Mersenne-Twister", normal.kind = "Inversion")
 k = 5
 second_clust = kmeans(scaled, centers = k, nstart = 1)
 
+<<<<<<< HEAD
 # Checking How many patients are in each group Now for comparison
+=======
+# How many patients are in each group?
+>>>>>>> e5b166296a26747938ea6bc3fe4d1d091f41e6ef
 second_clust$size
 ```
 
@@ -108,6 +116,10 @@ plot_one
 
 # Creating the plots of age and chol for the second clustering algorithm
 plot_two = ggplot(heart_disease, aes(x = age, y = chol, color = as.factor(second_clust))) + geom_point()
+<<<<<<< HEAD
+=======
+  #.... YOUR CODE FOR TASK 5 ....
+>>>>>>> e5b166296a26747938ea6bc3fe4d1d091f41e6ef
 plot_two
 ```
 
@@ -130,7 +142,11 @@ hc_1_assign <- cutree(hier_clust_1, k = 5)
 
 ## 7. Hierarchical clustering round two
 In hierarchical clustering, there are multiple ways to measure the dissimilarity between clusters of observations. Complete linkage records the largest dissimilarity between any two points in the two clusters being compared. On the other hand, single linkage is the smallest dissimilarity between any two points in the clusters. Different linkages will result in different clusters being formed. 
+<<<<<<< HEAD
 We want to explore different algorithms to group our heart disease patients. The best way to measure dissimilarity between patients could be to look at the smallest difference between patients and minimize that difference when grouping together clusters. It is always a good idea to explore different dissimilarity measures. Implementing hierarchical clustering using a new linkage function. 
+=======
+We want to explore different algorithms to group our heart disease patients. The best way to measure dissimilarity between patients could be to look at the smallest difference between patients and minimize that difference when grouping together clusters. It is always a good idea to explore different dissimilarity measures. Let's implement hierarchical clustering using a new linkage function. 
+>>>>>>> e5b166296a26747938ea6bc3fe4d1d091f41e6ef
 
 ```{r}
 # Executing hierarchical clustering with single linkage
