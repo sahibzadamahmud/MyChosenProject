@@ -1,0 +1,238 @@
+---
+title: "Using K Means Clustering to Establish Patterns in Heart Disease Patients"
+author: "Sahibzada Ali Mahmud"
+date: "June 10, 2019"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Executive Summary
+The main purpose of Clustering algorithms is to group items together based on certain similarities. Clustering algorithms are beneficial in unsupervised learning when data sets are not labelled and the input variables are available without the corresponding output variables. 
+In our project, we will analyze a dataset with anonymized patients with underlying heart conditions. If we are able to classify patients with similar characteristics, then the chances of them responding to the same treatment regime will be higher.The data set we will use is from V.A. Medical Center in Long Beach, CA and can be downloaded [here](https://archive.ics.uci.edu/ml/datasets/heart+Disease). We shall make use of K-Means Clustering and Hierarchical Clustering to establish patters. Furthermore, we shall also determine the optimal options for clustering for our scenario. 
+
+## Methodology Used
+The methodology used for this project consists of loading the required libraries, exploratory data analysis, scaling the data through z-score standardization, using K-Means and Hierarchical clustering, Data visualization, Comparison of results, and using internal and stability validation to determine the optimal parameters to be used for a clustering algorithm. 
+
+## 1. Loading Libraries and Checking Data
+At the outset, we will load the required libraries and have a look at the patient data.Also it is important that the data we use for the clustering algorithm is numeric. 
+ 
+```{r eval=FALSE}
+#Loading the required libraries
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+
+# Loading the data
+heart_disease = read.csv("datasets/heart_disease_patients.csv")
+
+# Print the first twenty rows of the data set
+head(heart_disease, n=20)
+
+# Let's check general information  about the data!
+str(heart_disease)
+
+# Checking for only numeric variables
+lapply(heart_disease, class)
+```
+
+## 2. Exploratory Data Analysis and Z-Score Standardization
+The popular clustering algorithms such as K Means clustering and Hierarchical  clustering measure the similarity between points using a distance formula. Therefore, we will carry out some prelimenary data exploratory analysis to check whether we require scaling through z-score transformation and reduce the the distance related bias. 
+To ensure that the features contribute relatively equally to the distance formule, we will use z-score standardization approach. In Z-score standardization, the mean of each feature X is subtracted from each value of feature X and divided by the standard deviation of feature value X: 
+$$X_{new} = \frac{X - Mean(X)}{Std(X)}$$
+
+In R, the scale() function makes it convenient to carry out the z-score standardization for us. 
+
+```{r}
+# Evidence that the data should be scaled?
+summary(heart_disease)
+
+# Removing the unnecessary id column
+heart_disease = heart_disease[ , !(names(heart_disease) %in% c("id"))]
+
+# Scaling data through Z-Score Standardization and saving as a data frame
+scaled = scale(heart_disease)
+
+# What does data look like now?
+summary(scaled)
+```
+
+
+## 3. Applying K-Means Algorithms to Group Patients
+After carrying out the required scaling of data, we can now apply the k-means algorithm. In order to ensure reproducibility, we will set a seed value for convenience of anyone who would like to verify the results. 
+
+
+```{r}
+# Set the seed so that results are reproducible
+seed_val = 10
+set.seed(seed_val, kind = "Mersenne-Twister", normal.kind = "Inversion")
+
+# Select a number of clusters
+k = 5
+
+# Run the k-means algorithms
+first_clust = kmeans(scaled, centers = k, nstart = 1)
+
+# Checking the Number of patients in each group
+first_clust$size
+
+# Extracting the Cluster centroids for more insight
+Cluster_centroids_1 <- as.data.frame(first_clust$centers)
+
+# Checking the location of each cluster centroid
+Cluster_centroids_1
+```
+
+
+## 4. An Additional Iteration of K-Means Algorithm
+Different iterations of K-Means may yield different cluster assignments since the cluster centers are selected through random selection of points. For consistency, it is important to check whether cluster assignments show similarity among different iterations of the algorithms. Therefore, we are going to check the patient grouping through application of another iteration of K-Means clustering algorithm. 
+
+```{r}
+# Set the seed
+seed_val = 38
+set.seed(seed_val, kind = "Mersenne-Twister", normal.kind = "Inversion")
+
+# Run the k-means algorithms
+k = 5
+second_clust = kmeans(scaled, centers = k, nstart = 1)
+
+# Checking the number of patients in each group for Comparison
+second_clust$size
+
+# Checking the location of each cluster centroid
+Cluster_centroids_2 <- as.data.frame(first_clust$centers)
+
+# Checking the location of each cluster centroid
+Cluster_centroids_2
+```
+
+
+## 5. Comparing patient clusters
+
+To ensure stability, the clusters resulting from different iterations of K-Means algorithm should roughly have similar sizes and similar distribution of variables. In case of large variations of aforementioned parameters among different iterations of K-Means algorithm, then K-Means cannot be termed as a good choice and other clustering methods may be considered. Visualization can help to an extent to determine the stability. We are going to use ggplot for the purpose. 
+
+```{r}
+# Adding cluster assignments to the data
+heart_disease[ , "first_clust"] = first_clust$cluster
+heart_disease[ , "second_clust"] = second_clust$cluster
+
+# Check and Load ggplot2
+if("ggplot2" %in% rownames(installed.packages()) == FALSE) {install.packages("ggplot2")}
+library(ggplot2)
+
+# Creating the plots of age and chol for the first clustering algorithm
+plot_one = ggplot(heart_disease, aes(x =age, y = chol, color = as.factor(first_clust))) + 
+  geom_point()
+plot_one 
+
+# Creating the plots of age and chol for the second clustering algorithm
+plot_two = ggplot(heart_disease, aes(x = age, y = chol, color = as.factor(second_clust))) + geom_point()
+plot_two
+```
+
+
+## 6. Hierarchical clustering: An Alternative
+An alternative is Hierarchical clustering in which it is not necessary to specify the number of clusters when running the algorithm. It gives good results when the data has a nested structure. Clusters can be selected by using the dendrogram. When the algorithm is applied on data, the distance matrix is automatically calculated. There are two types of Hierarchical Clustering.
+- Agglomerative
+- Divisive
+
+In Agglomerative approach, all the data points are initially considered as individual clusters and the algorithm works its way from the bottom up. It is the commonly used approach. In the Divisive approach, the whole data set is considered to be a single cluster and the algorithm works its way from top to bottom to create a dendrogram. The dendrogram allows one to see how similar observations are to one another and are useful in selecting the number of clusters to group the data
+
+```{r}
+# Executing hierarchical clustering with complete linkage
+hier_clust_1 = hclust(dist(scaled), method= "complete")
+
+# Printing the dendrogram
+plot(hier_clust_1, main = "Cluster Dendrogram Complete")
+
+# Getting cluster assignments based on number of selected clusters
+hc_1_assign <- cutree(hier_clust_1, k = 5)
+```
+
+
+## 7. Hierarchical clustering round two
+In hierarchical clustering, there are multiple ways to measure the dissimilarity between clusters of observations. Complete linkage records the largest dissimilarity between any two points in the two clusters being compared. On the other hand, single linkage is the smallest dissimilarity between any two points in the clusters. Different linkages will result in different clusters being formed. 
+In our case, we intend to look at the dissimilarity between the patients through the smallest difference between patients and minimize that difference when grouping together clusters. 
+
+```{r}
+# Executing hierarchical clustering with single linkage
+hier_clust_2 = hclust(dist(scaled), method= "single")
+
+# Printing the dendrogram
+plot(hier_clust_2, main = "Cluster Dendrogram Single")
+
+# Getting cluster assignments based on number of selected clusters
+hc_2_assign <- cutree(hier_clust_2, k = 5)
+```
+
+
+## 8. Comparing clustering results
+The idea behind grouping patients with similar characteristics in clusters is to increase the probability of them responding to the same treatment options. If the grouping is not based on certain similar characteristics, then some patients may not respond to the same treatment that is being administered to the group and hence indicative of noise. Therefore, similar characteristiscs or patterns need to be evident from the clusters formed. We are going to observe that from the results of the two Hierachical clustering algorithms through the distribution of variables. 
+
+```{r}
+# Adding assignments of chosen hierarchical linkage
+heart_disease['hc_clust'] = hc_1_assign
+
+# Remove 'sex', 'first_clust', and 'second_clust' variables
+hd_simple = heart_disease[, !(names(heart_disease) %in% c("sex", "first_clust", "second_clust"))]
+
+# Getting mean and standard deviation summary statistics
+
+clust_summary = do.call(data.frame, aggregate(. ~ hc_clust, data = hd_simple, function(x) c(avg = mean(x), sd = sd(x))))
+clust_summary
+```
+
+
+## 9. Visualizing the cluster contents
+We are going to use visualizations to evalute the hierarchical clustering algorithms through scatter plots. The idea to to observe the patterns that appear in the data of grouped patients. 
+
+```{r}
+# Plotting age and chol
+plot_one = ggplot(heart_disease, aes(x = age, y = chol, color = as.factor(hc_clust))) + 
+  geom_point()
+plot_one 
+
+# Plotting oldpeak and trestbps
+plot_two = ggplot(heart_disease, aes(x = oldpeak, y = trestbps, color = as.factor(hc_clust))) + 
+  geom_point()
+plot_two
+```
+
+## 10. Using Validation Measures to Determine the Optimal Options
+
+When using clustering algorithms, a good idea is to determine which algorithm would suit a particular situation and perform comparatively well. Also, disovering and selecting the optimal parameters for a clustering algorithm also improves its performance. However, determining the appropriate algorithm and selecting the optimal features requires additional work. Thankfully, R has a package called "[clvalid](https://cran.r-project.org/web/packages/clValid/vignettes/clValid.pdf)" which makes it easy to carry out the aforementioned tasks. 
+
+The package makes use of several methods to determine quality of clustering through Internal measures and sTability of clustering through stability measures. Internal measures check the compactness, connectedness, and separation of the cluster partitions while the stability measures make use of Average Proportion of Non-overlap (APN), Average Distance (AD), Average Distance between Means (ADM), and Figure of Merit (FOM).
+
+```{r}
+#Installing and loading the clValid Package
+if("clValid" %in% rownames(installed.packages()) == FALSE) {install.packages("clValid")}
+library(clValid)
+```
+
+```{r}
+#Checking Quality of Clustering through Internal Validation
+intern <- clValid(heart_disease, 2:6, clMethods = c("hierarchical", "kmeans"), validation = "internal") 
+
+#Check the Summary of Internal Validation
+summary(intern)
+```
+
+```{r}
+#Checking Stability of Clustering through Internal Validation
+stab <- clValid(heart_disease, 2:6, clMethods=c("hierarchical","kmeans"), validation="stability")
+
+#Check Optimal Scores
+optimalScores(stab)
+```
+
+## 11. Conclusion
+
+Based on internal validation, the quality of clustering is better for hierarchical clustering for a cluster size of 2. When considering stability measures, the optimal scores show that K-Means clustering performs better for a cluster size of 6 based on Figure of Merit (FOM) and Average Distance (AD). The Hierarchical Clustering show good stability results for cluster size of 2 and based on Average Distance between Means (ADM) and Average Proportion of Non-Overlap (APN). Therefore, as future work, the internal validation and stabilty validation measures can be used as a yardstick to initially select parameters for a given data set to possibly get optimal results. 
